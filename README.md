@@ -43,7 +43,7 @@ Confirm `backend/.env` is not in the commit before you push.
 ## Vercel
 
 1. Import this GitHub repository.
-2. Leave the root directory as the repository root. `vercel.json` installs and builds `frontend`, and publishes `frontend/dist`.
+2. Set the root directory to `frontend`. Vercel detects Vite. `frontend/vercel.json` publishes `dist` and keeps routes such as `/auth` working.
 3. Add one environment variable: `VITE_API_BASE_URL`, the public API address, with no trailing slash. Example: `https://api.yourdomain.com`.
 4. Deploy. Later pushes to the connected branch deploy the pages automatically.
 
