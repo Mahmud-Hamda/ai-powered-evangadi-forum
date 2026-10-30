@@ -31,6 +31,10 @@ const allowedOrigins = () => {
   return [...new Set(configured)];
 };
 
+if (process.env.VERCEL) {
+  app.set('trust proxy', 1);
+}
+
 app.use(
   cors({
     origin(origin, callback) {
@@ -45,8 +49,13 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+app.get('/health', async (_req, res, next) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', timestamp: new Date() });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use('/api', mainRouter);
@@ -81,4 +90,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+export default app;
+
+if (!process.env.VERCEL) {
+  startServer();
+}

@@ -4,7 +4,6 @@
  *
  * @module api/rag/controller
  */
-import path from 'node:path';
 import { StatusCodes } from 'http-status-codes';
 import { BadRequestError } from '../../../utils/errors/index.js';
 import {
@@ -14,7 +13,7 @@ import {
   deleteDocumentService,
   getDocumentMetaService,
   listDocumentsForUserService,
-  resolveDocumentPath,
+  readOwnedPdfBuffer,
   searchDocumentByCosineSimilarityService,
 } from '../service/rag.service.js';
 
@@ -104,18 +103,14 @@ export const getDocumentFileController = async (req, res, next) => {
       Number(req.params.documentId),
       req.user.id,
     );
-    const absolutePdfPath = resolveDocumentPath(ownedDocument.storage_path);
+    const pdfBuffer = await readOwnedPdfBuffer(ownedDocument);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
       `inline; filename="${encodeURIComponent(ownedDocument.title)}"`,
     );
-    res.sendFile(path.resolve(absolutePdfPath), sendFileError => {
-      if (sendFileError) {
-        next(sendFileError);
-      }
-    });
+    res.send(pdfBuffer);
   } catch (error) {
     next(error);
   }

@@ -3,15 +3,27 @@ dotenv.config();
 import mysql from 'mysql2/promise';
 
 /**
- * MySQL connection pool from `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`.
+ * MySQL connection pool from `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`.
+ * `DB_SSL=true` turns on TLS, which TiDB Cloud requires.
  *
  * @type {import('mysql2/promise').Pool}
  */
+const useSsl = process.env.DB_SSL === 'true';
+
 export const db = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || '',
   database: process.env.DB_NAME || 'evangadi_forum',
+  ssl: useSsl
+    ? {
+        rejectUnauthorized: true,
+        ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA } : {}),
+      }
+    : undefined,
+  waitForConnections: true,
+  connectionLimit: process.env.VERCEL ? 1 : 10,
 });
 
 /**

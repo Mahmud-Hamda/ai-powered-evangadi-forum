@@ -10,8 +10,13 @@ import crypto from 'node:crypto';
 import multer from 'multer';
 import { BadRequestError } from '../../../utils/errors/index.js';
 
-/** Maximum PDF upload size: 10MB, as in the create-document task. */
-const MAX_PDF_UPLOAD_BYTES = 10 * 1024 * 1024;
+/**
+ * Maximum PDF size. Vercel rejects request bodies above 4.5MB, so production
+ * stops at 4MB with an application error instead of a platform failure.
+ */
+const MAX_PDF_UPLOAD_BYTES = process.env.VERCEL
+  ? 4 * 1024 * 1024
+  : 10 * 1024 * 1024;
 
 /** Absolute path to the backend package root (`.../backend`). */
 const BACKEND_PROJECT_ROOT = path.resolve(
@@ -24,7 +29,9 @@ const BACKEND_PROJECT_ROOT = path.resolve(
  *
  * @type {string}
  */
-export const RAG_UPLOAD_ROOT = path.join(BACKEND_PROJECT_ROOT, 'uploads', 'rag');
+export const RAG_UPLOAD_ROOT = process.env.VERCEL
+  ? path.join('/tmp', 'uploads', 'rag')
+  : path.join(BACKEND_PROJECT_ROOT, 'uploads', 'rag');
 
 /**
  * Multer instance: disk storage, PDF-only filter, 10MB limit.
@@ -103,7 +110,8 @@ export const handlePdfUpload = (req, res, next) => {
     }
 
     if (uploadError.code === 'LIMIT_FILE_SIZE') {
-      return next(new BadRequestError('PDF must be 10MB or smaller.'));
+      const maxMb = process.env.VERCEL ? 4 : 10;
+      return next(new BadRequestError(`PDF must be ${maxMb}MB or smaller.`));
     }
 
     return next(uploadError);      // uploadError is express's error handler

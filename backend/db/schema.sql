@@ -162,6 +162,7 @@ CREATE TABLE `documents` (
     `mime_type` VARCHAR(128) NOT NULL DEFAULT 'application/pdf',
     `storage_path` VARCHAR(1024) NOT NULL,
     `byte_size` BIGINT NOT NULL DEFAULT 0,
+    `pdf_bytes` LONGBLOB NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
     `error_message` TEXT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

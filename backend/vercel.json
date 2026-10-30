@@ -1,0 +1,9 @@
+{
+  "framework": "express",
+  "regions": ["iad1"],
+  "functions": {
+    "index.js": {
+      "maxDuration": 60
+    }
+  }
+}

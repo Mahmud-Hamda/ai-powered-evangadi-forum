@@ -5,7 +5,6 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { PDFParse } from 'pdf-parse';
 import { safeExecute } from '../../../../db/config.js';
 import { chunkTextWithOverlap } from '../../../utils/chunk.js';
 import {
@@ -95,6 +94,40 @@ export const resolveDocumentPath = storagePath =>
   path.join(RAG_UPLOAD_ROOT, storagePath);
 
 /**
+ * Reads an owned PDF from disk, or from `documents.pdf_bytes` when the file
+ * is gone. Vercel keeps the disk only for the upload request, so later reads
+ * use the database copy.
+ *
+ * @param {{ document_id: number, user_id: number, storage_path: string }} documentRow - Owned document row.
+ * @returns {Promise<Buffer>} PDF bytes.
+ * @throws {NotFoundError} When neither the file nor the stored bytes exist.
+ */
+export const readOwnedPdfBuffer = async documentRow => {
+  try {
+    return await fs.readFile(resolveDocumentPath(documentRow.storage_path));
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  const rows = await safeExecute(
+    `SELECT pdf_bytes
+     FROM documents
+     WHERE document_id = ? AND user_id = ?
+     LIMIT 1`,
+    [documentRow.document_id, documentRow.user_id],
+  );
+  const pdfBytes = rows[0]?.pdf_bytes;
+
+  if (!pdfBytes || pdfBytes.length === 0) {
+    throw new NotFoundError('Document file not found.');
+  }
+
+  return pdfBytes;
+};
+
+/**
  * Loads one document that belongs to the signed-in user.
  *
  * @param {number} documentId - Document id from the URL.
@@ -120,6 +153,37 @@ export const assertOwnedDocument = async (documentId, userId) => {
 };
 
 /**
+ * Loads the PDF parser only when a file is indexed. Importing it at startup
+ * crashes the Vercel function because pdf.js expects a browser DOMMatrix.
+ *
+ * @returns {Promise<{ PDFParse: new (options: { data: Uint8Array }) => { getText: () => Promise<{ text?: string }>, destroy: () => Promise<void> } }>}
+ */
+const loadPdfParse = async () => {
+  if (typeof globalThis.DOMMatrix === 'undefined') {
+    const { default: CSSMatrix } = await import('dommatrix');
+    globalThis.DOMMatrix = CSSMatrix;
+  }
+  if (typeof globalThis.ImageData === 'undefined') {
+    globalThis.ImageData = class ImageData {
+      /**
+       * @param {Uint8ClampedArray} data
+       * @param {number} width
+       * @param {number} height
+       */
+      constructor(data, width, height) {
+        this.data = data;
+        this.width = width;
+        this.height = height;
+      }
+    };
+  }
+  if (typeof globalThis.Path2D === 'undefined') {
+    globalThis.Path2D = class Path2D {};
+  }
+  return import('pdf-parse');
+};
+
+/**
  * Reads a PDF from disk and returns its extracted plain text.
  *
  * @param {string} absolutePdfPath - Absolute path to the uploaded PDF.
@@ -127,6 +191,7 @@ export const assertOwnedDocument = async (documentId, userId) => {
  */
 const extractPlainTextFromPdfFile = async absolutePdfPath => {
   const pdfBuffer = await fs.readFile(absolutePdfPath);
+  const { PDFParse } = await loadPdfParse();
   const pdfParser = new PDFParse({ data: new Uint8Array(pdfBuffer) });
 
   try {
@@ -200,19 +265,21 @@ export const createDocumentFromUploadService = async ({ userId, file }) => {
     throw new BadRequestError('Upload a PDF using form field "file".');
   }
 
+  const pdfBytes = await fs.readFile(file.path);
   const storagePath = `${userId}/${file.filename}`;  // the relative path stored in the database, not the display name.
   const originalFileName = file.originalname || 'document.pdf';
 
   const insertResult = await safeExecute(
     `INSERT INTO documents
-      (user_id, title, mime_type, storage_path, byte_size, status)
-     VALUES (?, ?, ?, ?, ?, 'processing')`,
+      (user_id, title, mime_type, storage_path, byte_size, pdf_bytes, status)
+     VALUES (?, ?, ?, ?, ?, ?, 'processing')`,
     [
       userId,
       originalFileName,
       file.mimetype || 'application/pdf',
       storagePath,
-      file.size || 0,
+      file.size || pdfBytes.length,
+      pdfBytes,
     ],
   );
 
