@@ -1,0 +1,10 @@
+# Sends unknown paths to the React app so routes such as /auth keep working
+# when the built site is uploaded to Hostinger (Apache).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
