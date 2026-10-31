@@ -18,6 +18,29 @@
     box-shadow: 1px 0 0 rgba(15, 23, 42, 0.04);
 }
 
+@media (max-width: 899px) {
+    .sidebar {
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        box-shadow: none;
+    }
+
+    .sidebar--open {
+        transform: translateX(0);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .sidebar__link {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar {
+        transition: none;
+    }
+}
+
 /* Element: sidebar__header (brand + divider before nav) */
 .sidebar__header {
     padding-left: var(--spacing-lg);

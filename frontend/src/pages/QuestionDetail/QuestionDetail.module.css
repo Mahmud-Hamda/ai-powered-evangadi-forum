@@ -552,7 +552,7 @@ button.detail__pill.detail__pillCopied:focus,
   align-items: center;
   gap: 0.75rem;
   flex: 1;
-  min-width: 16rem;
+  min-width: min(16rem, 100%);
 }
 
 .detail__fitButton {

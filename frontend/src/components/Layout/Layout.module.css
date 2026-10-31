@@ -7,6 +7,21 @@
     background-color: var(--background);
 }
 
+.layout__navOpen {
+    overflow: hidden;
+    height: 100vh;
+}
+
+.layout__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    border: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.45);
+    cursor: pointer;
+}
+
 .layout__content {
     margin-left: var(--app-sidebar-width, 15rem);
     min-height: 100vh;
@@ -56,6 +71,21 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-lg);
+}
+
+@media (max-width: 899px) {
+    .layout__content {
+        margin-left: 0;
+    }
+
+    .layout__main {
+        padding: 1rem 1rem 2rem;
+    }
+
+    .layout__footer-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 @media (min-width: 768px) {

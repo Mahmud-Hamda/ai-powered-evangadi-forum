@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, LogOut, Sparkles } from 'lucide-react';
+import { Search, LogOut, Sparkles, Menu, X } from 'lucide-react';
 import {
   getAuthorAvatarColor,
   getAuthorInitials,
@@ -23,9 +23,19 @@ import styles from './Navbar.module.css';
  * @param {AuthUser|null} [props.user] - Signed-in user for the name and avatar.
  * @param {() => void} props.onLogout - Clears the session.
  * @param {boolean} [props.questionOnly] - Hides search when a shared link may open only one question.
+ * @param {boolean} [props.menuOpen] - Whether the narrow-screen menu is open.
+ * @param {() => void} [props.onMenuToggle] - Opens or closes that menu.
  * @returns {JSX.Element} The sticky top bar.
  */
-export default function Navbar({ title, subtitle, user, onLogout, questionOnly = false }) {
+export default function Navbar({
+  title,
+  subtitle,
+  user,
+  onLogout,
+  questionOnly = false,
+  menuOpen = false,
+  onMenuToggle,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -99,6 +109,18 @@ export default function Navbar({ title, subtitle, user, onLogout, questionOnly =
 
   return (
     <header className={styles.navbar}>
+      {onMenuToggle ? (
+        <button
+          type="button"
+          className={styles.navbar__menu}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          aria-controls="app-sidebar"
+          onClick={onMenuToggle}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      ) : null}
       <div className={styles.navbar__titleBlock}>
         <h2 className={styles.navbar__pageTitle}>{title}</h2>
         {subtitle ? (

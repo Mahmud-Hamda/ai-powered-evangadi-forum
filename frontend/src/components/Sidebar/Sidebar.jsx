@@ -25,24 +25,41 @@ const NAV_ITEMS = [
  * Left nav: brand, section links, "New Question", and the signed-in user.
  *
  * @param {boolean} [props.questionOnly] - Hides navigation when a shared link may open only one question.
+ * @param {boolean} [props.open] - Drawer is open on a narrow screen.
+ * @param {boolean} [props.mobileHidden] - Drawer is off-screen; keep it out of the tab order.
+ * @param {() => void} [props.onNavigate] - Closes the drawer after a navigation choice.
  * @returns {JSX.Element} The fixed sidebar.
  */
-export default function Sidebar({ questionOnly = false }) {
+export default function Sidebar({
+  questionOnly = false,
+  open = false,
+  mobileHidden = false,
+  onNavigate,
+}) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   return (
-    <aside className={styles.sidebar}>
+    <aside
+      id="app-sidebar"
+      className={styles.sidebar + (open ? ' ' + styles['sidebar--open'] : '')}
+      inert={mobileHidden ? true : undefined}
+      aria-hidden={mobileHidden || undefined}
+    >
       <div className={styles.sidebar__header}>
         <div
           className={styles.sidebar__branding}
-          onClick={() => navigate('/')}
+          onClick={() => {
+            onNavigate?.();
+            navigate('/');
+          }}
           title={questionOnly ? 'Public pages' : 'Go to Home'}
           role='button'
           tabIndex={0}
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
+              onNavigate?.();
               navigate('/');
             }
           }}
@@ -66,7 +83,10 @@ export default function Sidebar({ questionOnly = false }) {
           <button
             type='button'
             className={`${styles.sidebar__link} ${styles['sidebar__link--inactive']}`}
-            onClick={() => navigate('/')}
+            onClick={() => {
+              onNavigate?.();
+              navigate('/');
+            }}
           >
             <span>Public pages</span>
           </button>
@@ -79,6 +99,7 @@ export default function Sidebar({ questionOnly = false }) {
           <div key={item.path} className={styles['sidebar__nav-item-wrapper']}>
             <NavLink
               to={item.path}
+              onClick={() => onNavigate?.()}
               className={({ isActive }) =>
                 `${styles.sidebar__link} ${
                   isActive
@@ -110,7 +131,10 @@ export default function Sidebar({ questionOnly = false }) {
         {questionOnly ? null : (
         <button
           type='button'
-          onClick={() => navigate('/questions/ask')}
+          onClick={() => {
+            onNavigate?.();
+            navigate('/questions/ask');
+          }}
           className={styles.sidebar__button}
         >
           New Question
